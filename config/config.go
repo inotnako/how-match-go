@@ -3,6 +3,8 @@ package config
 import (
 	"errors"
 	"flag"
+	"fmt"
+	"os"
 	"strings"
 )
 
@@ -13,7 +15,7 @@ var (
 type SourceType int
 
 const (
-	SourceType_URL SourceType = iota
+	SourceType_URL SourceType = iota + 1
 	SourceType_File
 )
 
@@ -40,8 +42,13 @@ func (t *SourceType) Set(raw string) (err error) {
 	return err
 }
 
-func (t SourceType) String() string {
-	str, ok := sourceTypesToNames[t]
+func (t *SourceType) Get() interface{} {
+	return *t
+}
+
+// String also like default value
+func (t *SourceType) String() string {
+	str, ok := sourceTypesToNames[*t]
 	if !ok {
 		return ""
 	}
@@ -59,9 +66,15 @@ func New() *Config {
 
 	flag.Var(&cfg.SourceType, `type`, `set source type 'file' or 'url'`)
 	flag.IntVar(&cfg.PoolSize, `k`, 5, `set max concurrency size of pool workers`)
-	flag.BoolVar(&cfg.Verbal, `v`, true, `write log each of match by resource`)
+	flag.BoolVar(&cfg.Verbal, `v`, true, `write to log each of matched by source`)
 
 	flag.Parse()
+
+	if cfg.SourceType == 0 {
+		fmt.Fprint(os.Stderr, "missing required flag \"-type\"\n")
+		flag.Usage()
+		os.Exit(2)
+	}
 
 	return cfg
 }
